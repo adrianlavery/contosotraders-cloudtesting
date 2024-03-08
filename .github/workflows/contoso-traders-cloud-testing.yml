@@ -229,14 +229,14 @@ jobs:
       - name: docker push (to acr)
         run: docker push --all-tags ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.CARTS_ACR_REPOSITORY_NAME }}
       - name: deploy to aca
-        if: ${{ vars.DEPLOYPRIVATEENDPOINTS != 'true' }}
+        if: ${{ vars.DEPLOYPRIVATEENDPOINTS != 'true' && vars.DEPLOYVMBASEDAPIS == false }}
         uses: azure/CLI@v1
         with:
           inlineScript: |
             az config set extension.use_dynamic_install=yes_without_prompt
             az containerapp update -n ${{ env.CARTS_ACA_NAME }}${{ vars.SUFFIX }} -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --image ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.CARTS_ACR_REPOSITORY_NAME }}:${{ github.sha }}
       - name: deploy to aca (internal)
-        if: ${{ vars.DEPLOYPRIVATEENDPOINTS == 'true' }}
+        if: ${{ vars.DEPLOYPRIVATEENDPOINTS == 'true' && vars.DEPLOYVMBASEDAPIS == false }}
         uses: azure/CLI@v1
         with:
           inlineScript: |
