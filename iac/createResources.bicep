@@ -1894,7 +1894,7 @@ resource runScriptToCreateProfileDatabase 'Microsoft.Resources/deploymentScripts
 // private dns zone
 //
 
-module privateDnsZone './modules/createPrivateDnsZone.bicep' = if (deployPrivateEndpoints) {
+module privateDnsZone './modules/createPrivateDnsZone.bicep' = if (deployPrivateEndpoints && !deployVmBasedApis) {
   name: 'createPrivateDnsZone'
   params: {
     privateDnsZoneName: (deployPrivateEndpoints && !deployVmBasedApis) ? join(skip(split(cartsinternalapiaca.properties.configuration.ingress.fqdn, '.'), 2), '.') : ''
