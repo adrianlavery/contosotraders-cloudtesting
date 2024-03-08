@@ -510,7 +510,12 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: az storage blob sync --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' -c '$web' -s 'src/ContosoTraders.Ui.Website/build'
-      #Copy Files to IIS Servers - NG
+     #Extract Branch Name - NG 
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+        #Copy Files to IIS Servers - NG
       - name: IIS Copy # IIS
         uses: azure/CLI@v1
         with:
@@ -528,7 +533,7 @@ jobs:
                           --publisher Microsoft.Compute \
                           --vm-name $name \
                           --resource-group $resourceGroupName \ 
-                          --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/BranchToMerge/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":".\BlobToIisCopy.ps1 -storageAccountKey "$storageAccountKey"}' 
+                          --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/${{steps.extract_branch.outputs.branch}}/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":".\BlobToIisCopy.ps1 -storageAccountKey "$storageAccountKey"}' 
                         done    
       - name: purge ui cdn endpoint
         uses: azure/CLI@v1
