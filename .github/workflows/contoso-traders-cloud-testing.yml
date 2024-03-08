@@ -160,7 +160,7 @@ jobs:
           region: ${{ vars.DEPLOYMENTREGION }}
           resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}
           template: ./iac/createResources.bicep
-          parameters: ./iac/createResources.parameters.json suffix=${{ vars.SUFFIX }} sqlPassword=${{ secrets.SQLPASSWORD }} deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} deploySqlOnIaas=${{ vars.DEPLOYSQLONIAAS }} deployVmBasedApis=${{ vars.DEPLOYVMBASEDAPIS }}
+          parameters: ./iac/createResources.parameters.json suffix=${{ vars.SUFFIX }} sqlPassword=${{ secrets.SQLPASSWORD }} deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} deploySqlOnIaas=${{ vars.DEPLOYSQLONIAAS }} deployVmBasedApis=${{ vars.DEPLOYVMBASEDAPIS }} iisVmPassword=${{ secrets.SQLPASSWORD }}
 
       # Add the logged-in service principal to the key vault access policy
       - name: add service principal to kv access policy
@@ -236,7 +236,7 @@ jobs:
             az config set extension.use_dynamic_install=yes_without_prompt
             az containerapp update -n ${{ env.CARTS_ACA_NAME }}${{ vars.SUFFIX }} -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --image ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.CARTS_ACR_REPOSITORY_NAME }}:${{ github.sha }}
       - name: deploy to aca (internal)
-        if: ${{ vars.DEPLOYPRIVATEENDPOINTS == 'true' }}
+        if: ${{ vars.DEPLOYPRIVATEENDPOINTS == 'true' }} 
         uses: azure/CLI@v1
         with:
           inlineScript: |
@@ -510,6 +510,31 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: az storage blob sync --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' -c '$web' -s 'src/ContosoTraders.Ui.Website/build'
+     #Extract Branch Name - NG 
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+        #Copy Files to IIS Servers - NG
+      - name: IIS Copy # IIS
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+                      az vm list --resource-group ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --show-details --query "[?powerState=='VM running' && storageProfile.osDisk.osType=='Windows' && contains(name, 'iis')].{Name:name, ResourceGroupName:resourceGroup}" -o json | \
+                      jq -c '.[]' | \
+          
+                        while read vm; do
+                          name=$(echo $vm | jq -r '.Name')
+                          resourceGroupName=$(echo $vm | jq -r '.ResourceGroupName')
+                          storageAccountKey=$(az storage account keys list --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' --resource-group '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --query "[0].value" -o tsv)
+                        
+                          az vm extension set \
+                          --name CustomScriptExtension \
+                          --publisher Microsoft.Compute \
+                          --vm-name $name \
+                          --resource-group $resourceGroupName \ 
+                          --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/${{steps.extract_branch.outputs.branch}}/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":"powershell.exe .\BlobToIisCopy.ps1 -storageAccountKey "$storageAccountKey"}' 
+                        done    
       - name: purge ui cdn endpoint
         uses: azure/CLI@v1
         with:
