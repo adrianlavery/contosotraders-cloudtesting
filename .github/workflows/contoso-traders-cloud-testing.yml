@@ -160,7 +160,7 @@ jobs:
           region: ${{ vars.DEPLOYMENTREGION }}
           resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}
           template: ./iac/createResources.bicep
-          parameters: ./iac/createResources.parameters.json suffix=${{ vars.SUFFIX }} sqlPassword=${{ secrets.SQLPASSWORD }} deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} deploySqlOnIaas=${{ vars.DEPLOYSQLONIAAS }} deployVmBasedApis=${{ vars.DEPLOYVMBASEDAPIS }}
+          parameters: ./iac/createResources.parameters.json suffix=${{ vars.SUFFIX }} sqlPassword=${{ secrets.SQLPASSWORD }} deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} deploySqlOnIaas=${{ vars.DEPLOYSQLONIAAS }} deployVmBasedApis=${{ vars.DEPLOYVMBASEDAPIS }} iisVmPassword=${{ secrets.IISVMPASSWORD }}
 
       # Add the logged-in service principal to the key vault access policy
       - name: add service principal to kv access policy
@@ -510,6 +510,26 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: az storage blob sync --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' -c '$web' -s 'src/ContosoTraders.Ui.Website/build'
+      #Copy Files to IIS Servers - NG
+      - name: IIS Copy # IIS
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+                      az vm list --resource-group ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --show-details --query "[?powerState=='VM running' && storageProfile.osDisk.osType=='Windows' && contains(name, 'iis')].{Name:name, ResourceGroupName:resourceGroup}" -o json | \
+                      jq -c '.[]' | \
+          
+                        while read vm; do
+                          name=$(echo $vm | jq -r '.Name')
+                          resourceGroupName=$(echo $vm | jq -r '.ResourceGroupName')
+                          storageAccountKey=$(az storage account keys list --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' --resource-group '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --query "[0].value" -o tsv)
+                        
+                          az vm extension set \
+                          --name CustomScriptExtension \
+                          --publisher Microsoft.Compute \
+                          --vm-name $name \
+                          --resource-group $resourceGroupName \ 
+                          --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/BranchToMerge/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":".\BlobToIisCopy.ps1 -storageAccountKey "$storageAccountKey"}' 
+                        done    
       - name: purge ui cdn endpoint
         uses: azure/CLI@v1
         with:

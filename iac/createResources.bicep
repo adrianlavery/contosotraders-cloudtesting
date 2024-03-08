@@ -14,6 +14,12 @@ param suffix string
 @description('A password which will be set on all SQL Azure DBs.')
 param sqlPassword string // @TODO: Obviously, we need to fix this!
 
+//IIS Params - NG
+@secure()
+@description('Password set for IIS machines, pulled from yaml config / Github secrets')
+param iisVmPassword string 
+
+
 param resourceLocation string = resourceGroup().location
 
 // tenant
@@ -187,6 +193,11 @@ var sqlVmAdminLogin = 'localadmin'
 var sqlVmAdminPassword = sqlPassword
 var sqlVmShutdownScheduleName = 'shutdown-computevm-sqlvm'
 var sqlVmShutdownScheduleTimezoneId = 'UTC'
+
+//iis vm's - NG
+var iisVmUsername = 'iisAdmin'
+// iis front door - NG 
+var frontDoorClassicName = 'contosoTradersFDIIS'
 
 // private dns zone
 var privateDnsZoneVnetLinkName = '${prefixHyphenated}-privatednszone-vnet-link${suffix}'
@@ -1553,7 +1564,19 @@ module vnetWebSubnetNsg './modules/createNsg.bicep' = if (deployPrivateEndpoints
     params: {
       location: resourceLocation
       nsgName: '${vnetWebSubnetName}-nsg-${resourceLocation}'
-      nsgRules: []
+      nsgRules: [
+        { //NG
+          name: 'Allow80FDInbound'
+          protocol: 'Tcp'
+          sourcePortRange: '*'
+          destinationPortRange: '80'
+          sourceAddressPrefix: 'AzureFrontDoor.Frontend'
+          destinationAddressPrefix: 'AzureLoadBalancer'
+          access: 'Allow'
+          priority: '100'
+          direction: 'Inbound'
+        }
+      ]
       resourceTags: resourceTags
     }
 }
@@ -1904,6 +1927,36 @@ module privateDnsZone './modules/createPrivateDnsZone.bicep' = if (deployPrivate
     privateDnsZoneARecordIp: deployPrivateEndpoints ? cartsinternalapiacaenv.properties.staticIp : ''
     resourceTags: resourceTags
   }
+}
+
+///
+///  IIS VMs - NG 
+///
+
+module iisVMs './modules/createIisVM.bicep' = { //TODO: Add Feature Flag 
+  name: 'createIIS'
+  params: {
+    location:resourceLocation
+    adminPassword: iisVmPassword
+    adminUsername: iisVmUsername 
+    exsistingSubnetName:vnetWebSubnetName 
+    exsistingVirtualNetworkName: vnetName 
+    exsitingVNetResourceGroup: resourceGroup().name
+  }
+}
+
+///
+/// FrontDoor Classic - NG 
+///
+module frontDoor 'modules/createFrontDoorClassic.bicep' = {
+  name: 'createFrontDoor'
+  params: {
+     backendAddress: iisVMs.outputs.lbIPAddress
+     frontDoorName: frontDoorClassicName
+  }
+  dependsOn: [
+     iisVMs
+  ]
 }
 
 // aca environment (internal)
