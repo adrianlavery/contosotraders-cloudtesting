@@ -302,12 +302,12 @@ resource kv 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 
   // secret
-  resource kv_secretCartsInternalApiEndpoint 'secrets' = if (deployPrivateEndpoints) {
+  resource kv_secretCartsInternalApiEndpoint 'secrets' = if (deployPrivateEndpoints && !deployVmBasedApis) {
     name: kvSecretNameCartsInternalApiEndpoint
     tags: resourceTags
     properties: {
       contentType: 'endpoint url (fqdn) of the (internal) carts api'
-      value: deployPrivateEndpoints ? cartsinternalapiaca.properties.configuration.ingress.fqdn : ''
+      value: (deployPrivateEndpoints && !deployVmBasedApis) ? cartsinternalapiaca.properties.configuration.ingress.fqdn : ''
     }
   }
 
@@ -1897,17 +1897,17 @@ resource runScriptToCreateProfileDatabase 'Microsoft.Resources/deploymentScripts
 module privateDnsZone './modules/createPrivateDnsZone.bicep' = if (deployPrivateEndpoints) {
   name: 'createPrivateDnsZone'
   params: {
-    privateDnsZoneName: deployPrivateEndpoints ? join(skip(split(cartsinternalapiaca.properties.configuration.ingress.fqdn, '.'), 2), '.') : ''
+    privateDnsZoneName: (deployPrivateEndpoints && !deployVmBasedApis) ? join(skip(split(cartsinternalapiaca.properties.configuration.ingress.fqdn, '.'), 2), '.') : ''
     privateDnsZoneVnetId: deployPrivateEndpoints ? vnet.id : ''
     privateDnsZoneVnetLinkName: privateDnsZoneVnetLinkName
-    privateDnsZoneARecordName: deployPrivateEndpoints ? join(take(split(cartsinternalapiaca.properties.configuration.ingress.fqdn, '.'), 2), '.') : ''
-    privateDnsZoneARecordIp: deployPrivateEndpoints ? cartsinternalapiacaenv.properties.staticIp : ''
+    privateDnsZoneARecordName: (deployPrivateEndpoints && !deployVmBasedApis) ? join(take(split(cartsinternalapiaca.properties.configuration.ingress.fqdn, '.'), 2), '.') : ''
+    privateDnsZoneARecordIp: (deployPrivateEndpoints && !deployVmBasedApis) ? cartsinternalapiacaenv.properties.staticIp : ''
     resourceTags: resourceTags
   }
 }
-
+ 
 // aca environment (internal)
-resource cartsinternalapiacaenv 'Microsoft.App/managedEnvironments@2022-06-01-preview' = if (deployPrivateEndpoints) {
+resource cartsinternalapiacaenv 'Microsoft.App/managedEnvironments@2022-06-01-preview' = if (deployPrivateEndpoints && !deployVmBasedApis) {
   name: cartsInternalApiAcaEnvName
   location: resourceLocation
   tags: resourceTags
@@ -1924,7 +1924,7 @@ resource cartsinternalapiacaenv 'Microsoft.App/managedEnvironments@2022-06-01-pr
 }
 
 // aca (internal)
-resource cartsinternalapiaca 'Microsoft.App/containerApps@2022-06-01-preview' = if (deployPrivateEndpoints) {
+resource cartsinternalapiaca 'Microsoft.App/containerApps@2022-06-01-preview' = if (deployPrivateEndpoints && !deployVmBasedApis) {
   name: cartsInternalApiAcaName
   location: resourceLocation
   tags: resourceTags
@@ -1962,7 +1962,7 @@ resource cartsinternalapiaca 'Microsoft.App/containerApps@2022-06-01-preview' = 
         }
       ]
     }
-    environmentId: cartsinternalapiacaenv.id
+    environmentId: (deployPrivateEndpoints && !deployVmBasedApis) ? cartsinternalapiacaenv.id : ''
     template: {
       scale: {
         minReplicas: 1
