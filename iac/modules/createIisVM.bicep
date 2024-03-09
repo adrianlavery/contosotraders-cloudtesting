@@ -30,7 +30,7 @@ var count = 3
 var vmName = 'vmiis'
 var vmNicName = '${vmName}nic' 
 
-var vmSize = 'Standard_B2s'
+var vmSize = 'Standard_D8s_v3'
 var imagePublisher = 'MicrosoftWindowsServer'
 var imageOffer = 'WindowsServer'
 var imageSku = '2019-Datacenter'

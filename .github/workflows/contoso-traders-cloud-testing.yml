@@ -520,21 +520,20 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-                      az vm list --resource-group ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --show-details --query "[?powerState=='VM running' && storageProfile.osDisk.osType=='Windows' && contains(name, 'iis')].{Name:name, ResourceGroupName:resourceGroup}" -o json | \
-                      jq -c '.[]' | \
-          
-                        while read vm; do
-                          name=$(echo $vm | jq -r '.Name')
-                          resourceGroupName=$(echo $vm | jq -r '.ResourceGroupName')
-                          storageAccountKey=$(az storage account keys list --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' --resource-group '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --query "[0].value" -o tsv)
-                        
-                          az vm extension set \
-                          --name CustomScriptExtension \
-                          --publisher Microsoft.Compute \
-                          --vm-name $name \
-                          --resource-group $resourceGroupName \ 
-                          --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/${{steps.extract_branch.outputs.branch}}/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":"powershell.exe .\BlobToIisCopy.ps1 -storageAccountKey "$storageAccountKey"}' 
-                        done    
+            az vm list --resource-group ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} --show-details --query "[?powerState=='VM running' && storageProfile.osDisk.osType=='Windows' && contains(name, 'iis')].{Name:name, ResourceGroupName:resourceGroup}" -o json | \
+            jq -c '.[]' | \
+            while read vm; do
+              name=$(echo $vm | jq -r '.Name')
+              resourceGroupName=$(echo $vm | jq -r '.ResourceGroupName')
+              storageAccountKey=$(az storage account keys list --account-name '${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}' --resource-group '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --query "[0].value" -o tsv)      
+              storageAccountName='${{ env.UI_STORAGE_ACCOUNT_NAME }}${{ vars.SUFFIX }}'
+              az vm extension set \
+              --name CustomScriptExtension \
+              --publisher Microsoft.Compute \
+              --vm-name $name \
+              --resource-group $resourceGroupName \
+              --settings '{"fileUris":["https://raw.githubusercontent.com/${{github.repository}}/${{steps.extract_branch.outputs.branch}}/iac/scripts/BlobToIisCopy.ps1"],"commandToExecute":"powershell.exe .\BlobToIisCopy.ps1 -storageAccountKey '$storageAccountKey' -storageAccountName '$storageAccountName'"}' 
+            done    
       - name: purge ui cdn endpoint
         uses: azure/CLI@v1
         with:

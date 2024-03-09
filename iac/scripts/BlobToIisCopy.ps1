@@ -1,7 +1,7 @@
 Install-packageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 Install-Module -Name Az -Repository PSGallery -Force
 
-param($storageAccountKey)
+param($storageAccountKey, $storageAccountName)
 
 New-Item -Path "C:\" -Name "ReactApp" -ItemType Directory
 New-Item -Path "C:\ReactApp" -Name "static" -ItemType Directory
@@ -9,7 +9,6 @@ New-Item -Path "C:\ReactApp\static" -Name "css"-ItemType Directory
 New-Item -Path "C:\ReactApp\static" -Name "js"-ItemType Directory
 New-Item -Path "C:\ReactApp\static" -Name "media"-ItemType Directory
 
-$storageAccountName = 'contosotradersui2ngall'
 $containerName = '$web'
 $destinationPath = 'C:\ReactApp'
 
