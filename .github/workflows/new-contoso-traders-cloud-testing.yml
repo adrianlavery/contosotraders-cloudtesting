@@ -157,8 +157,8 @@ jobs:
           scope: resourcegroup
           region: ${{ vars.DEPLOYMENTREGION }}
           resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}
-          template: ./iac/newcreateResources.bicep
-          parameters: ./iac/newcreateResources.bicepparam 
+          template: ./iac/newCreateResources.bicep
+          parameters: ./iac/newCreateResources.bicepparam 
                       suffix=${{ vars.SUFFIX }} 
                       deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} 
                       primaryLocation=${{ vars.DEPLOYMENTREGION }} 
