@@ -24,6 +24,7 @@ You will need following to get started:
    * `az provider register -n Microsoft.OperationsManagement -c`
    * `az provider register -n Microsoft.Cdn -c`
    * `az provider register -n Microsoft.Chaos -c`
+   * `az feature register --name EncryptionAtHost  --namespace Microsoft.Compute`
 
 4. Create an Azure Service Principal and add it to the `Owner` role in your Azure subscription:
    * `az ad sp create-for-rbac -n contosotraders-sp --role Owner --scopes /subscriptions/<AZURE-SUBSCRIPTION-ID> --sdk-auth`. Replace `<AZURE-SUBSCRIPTION-ID>` with your Azure subscription ID.
