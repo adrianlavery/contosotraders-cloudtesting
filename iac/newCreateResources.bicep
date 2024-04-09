@@ -191,7 +191,7 @@ module productsSqlServer 'modules/createSqlIaas.bicep' = [for region in regions:
   params: {
     adminPassword: adminPassword
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
-    virtualMachineName: 'productsvm-${region}'
+    virtualMachineName: '${productsDbServerName}-${region}'
     location: region
   } 
 }]
@@ -202,7 +202,7 @@ module profilesSqlServer 'modules/createSqlIaas.bicep' = [for region in regions:
   params: {
     adminPassword: adminPassword
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
-    virtualMachineName: 'profilesvm-${region}'
+    virtualMachineName: '${profilesDbServerName}-${region}'
     location: region
   } 
 }]
