@@ -156,7 +156,7 @@ jobs:
             --name create-resources \
             --parameters ./iac/newCreateResources.bicepparam \
             --parameters suffix=${{ vars.SUFFIX }} \
-            deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} \
+            deployMultiRegion=${{ vars.MULTIREGION }} \
             primaryLocation=${{ vars.DEPLOYMENTREGION }} \
             secondaryLocation=${{ vars.SECONDARYREGION }} \
             adminPassword=${{ secrets.ADMINPASSWORD }} \
