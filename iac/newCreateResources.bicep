@@ -183,7 +183,7 @@ module keyvault 'br/public:avm/res/key-vault/vault:0.4.0' = [for region in regio
         roleDefinitionIdOrName: 'Key Vault Secrets Officer'
       }
       {
-        principalId: userassignedmiforkvaccess.id
+        principalId: userassignedmiforkvaccess.properties.principalId
         roleDefinitionIdOrName: 'Key Vault Secrets User'
       }
     ]
