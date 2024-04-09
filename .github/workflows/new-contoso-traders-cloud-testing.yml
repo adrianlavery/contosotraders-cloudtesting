@@ -161,7 +161,8 @@ jobs:
             secondaryLocation=${{ vars.SECONDARYREGION }} \
             adminPassword=${{ secrets.ADMINPASSWORD }} \
             deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} \
-            deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }}
+            deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }} \
+            deploymentUserId=${{ fromJSON(secrets.SERVICEPRINCIPAL.clientid) }}
 
                     
       # Seed the DBs and storage accounts
