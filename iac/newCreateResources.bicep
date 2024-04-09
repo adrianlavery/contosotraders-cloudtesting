@@ -237,17 +237,12 @@ resource extractAcrPassword 'Microsoft.Resources/deploymentScripts@2023-08-01' =
   name: 'extractAcrPassword'
   location: primaryLocation
   kind: 'AzureCLI'
-  identity: {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userassignedmiforkvaccess.id}': {}
-    }
-  }
   properties: {
-    azCliVersion: '2.28.0'
+    azCliVersion: '2.52.0'
     scriptContent: 'az acr credential show -n ${prefix}acr${suffix} --query "passwords[0].value" -o tsv'
-    retentionInterval: 'PT4H'
+    retentionInterval: 'PT1H'
     timeout: 'PT1H'
+    cleanupPreference: 'OnSuccess'
   }
   tags: resourceTags
 } 
