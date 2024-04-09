@@ -68,6 +68,9 @@ param sqlLogDisksCount int = 1
 @description('Path for SQL Log files. Please choose drive letter from F to Z and different than the one used for SQL data. Drive letter from A to E are reserved for system')
 param logPath string = 'G:\\SQLLog'
 
+@description('Tags')
+param tags object
+
 var diskConfigurationType = 'NEW'
 var dataDisksLuns = range(0, sqlDataDisksCount)
 var logDisksLuns = range(sqlDataDisksCount, sqlLogDisksCount)
@@ -125,6 +128,7 @@ module virtualMachine 'br/public:avm/res/compute/virtual-machine:0.2.3' = {
           nicSuffix: 'nic-01'
         }
       ]
+      tags: tags
     }
 }
 
@@ -132,6 +136,7 @@ resource Microsoft_SqlVirtualMachine_sqlVirtualMachines_virtualMachine 'Microsof
   name: virtualMachineName
   dependsOn: [virtualMachine]
   location: location
+  tags: tags
   properties: {
     virtualMachineResourceId: virtualMachine.outputs.resourceId
     sqlManagement: 'Full'

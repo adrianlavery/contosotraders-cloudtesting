@@ -122,6 +122,7 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.5' = [for region in r
         addressPrefix: region == primaryLocation ? '${substring(primaryVnetAddressSpace, 0, 4)}.4.0/24' : '${substring(secondaryVnetAddressSpace, 0, 4)}.4.0/24'
       }
     ]
+    tags: resourceTags
   }
 }]
 
@@ -193,6 +194,7 @@ module productsSqlServer 'modules/createSqlIaas.bicep' = [for region in regions:
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
     virtualMachineName: '${productsDbServerName}-${region}'
     location: region
+    tags: resourceTags
   } 
 }]
 
@@ -204,6 +206,7 @@ module profilesSqlServer 'modules/createSqlIaas.bicep' = [for region in regions:
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
     virtualMachineName: '${profilesDbServerName}-${region}'
     location: region
+    tags: resourceTags
   } 
 }]
 
