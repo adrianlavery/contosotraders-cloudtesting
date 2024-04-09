@@ -207,6 +207,12 @@ module acr 'br/public:avm/res/container-registry/registry:0.1.1' = {
     acrSku: deployPrivateEndpoints || multiRegion ? 'Premium' : 'Basic'
     location: primaryLocation
     acrAdminUserEnabled: true
+    roleAssignments: [
+      {
+        principalId: userassignedmiforkvaccess.properties.principalId
+        roleDefinitionIdOrName: 'Contributor'
+      }
+    ]
     privateEndpoints: deployPrivateEndpoints ? [
       {
         subnetResourceId: primaryMiddleTierSubnetId
