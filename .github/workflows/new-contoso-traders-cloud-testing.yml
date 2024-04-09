@@ -162,7 +162,7 @@ jobs:
             adminPassword=${{ secrets.ADMINPASSWORD }} \
             deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} \
             deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }} \
-            deploymentUserId=$(az ad signed-in-user show --query id -o tsv)
+            deploymentUserId=$(az ad sp show --id $(az account show --query "user.name" -o tsv) --query "id" -o tsv)
 
                     
       # Seed the DBs and storage accounts
