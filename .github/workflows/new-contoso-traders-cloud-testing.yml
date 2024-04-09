@@ -233,7 +233,7 @@ jobs:
               --vmss-name ${{ env.PROD_VM_NAME }}${{ vars.DEPLOYMENTREGION }} \
               --name customScript \
               --publisher Microsoft.Compute \
-              --protected-settings '{"script": docker login --username ${{ env.ACR_NAME }}${{ vars.SUFFIX }} --password ${{ steps.extract-acr-password.outputs.acrPassword }} ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io && \
+              --protected-settings '{"script": "docker login --username ${{ env.ACR_NAME }}${{ vars.SUFFIX }} --password ${{ steps.extract-acr-password.outputs.acrPassword }} ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io && \
                                                docker pull ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.PRODUCTS_ACR_REPOSITORY_NAME }}:${{ github.sha }} && \
                                                docker run -d --restart=always -p 80:80 -e KeyVaultEndpoint='https://contosotraderskv${{ vars.SUFFIX }}.vault.azure.net/' \
                                                -e ManagedIdentityClientId='${{ steps.get-managedIdentityClientId.outputs.managedIdentityClientId }}'  \
