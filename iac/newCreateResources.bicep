@@ -234,7 +234,7 @@ resource extractAcrPassword 'Microsoft.Resources/deploymentScripts@2023-08-01' =
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${userAssignedMIForKVAccessName}': {}
+      '${userassignedmiforkvaccess.id}': {}
     }
   }
   properties: {
