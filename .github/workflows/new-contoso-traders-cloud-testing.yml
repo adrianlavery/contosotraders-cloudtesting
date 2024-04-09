@@ -162,7 +162,7 @@ jobs:
             deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} `
             deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }}
 
-                      
+                    
       # Seed the DBs and storage accounts
       - name: seed AzureSQL products db
         uses: azure/sql-action@v2.2
