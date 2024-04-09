@@ -31,6 +31,9 @@ param primaryLocation string = 'eastus'
 @description('The secondary location of all resources. If not used then resources will only be deployed to a single region.')
 param secondaryLocation string = 'westus'
 
+@description('The name of the admin user to create on all required resources')
+param adminUserName string = 'azadmin'
+
 @secure()
 @description('Admin password to be used for all required resources')
 param adminPassword string
@@ -65,6 +68,9 @@ var regions = multiRegion ? [primaryLocation, secondaryLocation] : [primaryLocat
 // key vault
 var kvName = 'kv${suffix}'
 
+// user-assigned managed identity (for key vault access)
+var userAssignedMIForKVAccessName = '${prefixHyphenated}-mi-kv-access${suffix}'
+
 // tags
 var resourceTags = {
   Product: prefixHyphenated
@@ -74,6 +80,8 @@ var resourceTags = {
 
 // subnet ids
 
+var primaryMiddleTierSubnetId = vnet[0].outputs.subnetResourceIds[2]
+var secondaryMiddleTierSubnetId = multiRegion ? vnet[1].outputs.subnetResourceIds[2] : ''
 var primaryBackendSubnetId = vnet[0].outputs.subnetResourceIds[3]
 var secondaryBackendSubnetId = multiRegion ? vnet[1].outputs.subnetResourceIds[3] : ''
 
@@ -126,6 +134,22 @@ module vnet 'br/public:avm/res/network/virtual-network:0.1.5' = [for region in r
   }
 }]
 
+// create a Standard Bastion Host
+module bastion 'br/public:avm/res/network/bastion-host:0.2.1' = [for region in regions: {
+  name: 'bastion-${region}-deployment'
+  dependsOn: vnet
+  params: {
+    name: '${prefixHyphenated}-bastion${suffix}-${region}'
+    location: region
+    virtualNetworkResourceId: vnet[region == primaryLocation ? 0 : 1].outputs.resourceId
+    publicIPAddressObject: {
+      name: '${prefixHyphenated}-bastion-ip${suffix}-${region}'
+      location: region
+    }
+    tags: resourceTags
+  }
+}]
+
 // create a keyvault per region to store secrets
 module keyvault 'br/public:avm/res/key-vault/vault:0.4.0' = [for region in regions:  {
   name: 'kv-${region}-deployment'
@@ -158,11 +182,50 @@ module keyvault 'br/public:avm/res/key-vault/vault:0.4.0' = [for region in regio
         principalId: deploymentUserId
         roleDefinitionIdOrName: 'Key Vault Secrets Officer'
       }
+      {
+        principalId: userassignedmiforkvaccess.id
+        roleDefinitionIdOrName: 'Key Vault Secrets User'
+      }
     ]
     sku: 'standard'
     tags: resourceTags
   }
 }]
+
+resource userassignedmiforkvaccess 'Microsoft.ManagedIdentity/userAssignedIdentities@2022-01-31-preview' = {
+  name: userAssignedMIForKVAccessName
+  location: primaryLocation
+  tags: resourceTags
+}
+
+// Create a container registry
+
+module acr 'br/public:avm/res/container-registry/registry:0.1.1' = {
+  name: 'acr-deployment'
+  params: {
+    name: '${prefix}acr${suffix}'
+    acrSku: deployPrivateEndpoints || multiRegion ? 'Premium' : 'Basic'
+    location: primaryLocation
+    acrAdminUserEnabled: true
+    privateEndpoints: deployPrivateEndpoints ? [
+      {
+        subnetResourceId: primaryMiddleTierSubnetId
+        location: primaryLocation
+        service: 'registry'
+        tags: resourceTags
+      }
+    ] : []
+    replications: multiRegion ? [
+      {
+        name: '${prefix}acr${suffix}replication'
+        location: secondaryLocation
+        regionEndpointEnabled: true
+        tags: resourceTags
+      }
+    ] : []
+    tags: resourceTags
+  }
+}
 
 
 
@@ -177,7 +240,22 @@ module keyvault 'br/public:avm/res/key-vault/vault:0.4.0' = [for region in regio
 // Middle Tier Resources
 ////////////////////////////////////////////////////////////////////////////////
 
+// Create IAAS VMs for the middle tier
 
+module productsApiServer 'modules/createApiIaas.bicep' = [for region in regions: if (deployMiddleTierIaas) {
+  name : 'products-apivm-${region}-deployment'
+  dependsOn: vnet
+  params: {
+    adminUserName: adminUserName
+    adminPassword: adminPassword
+    subnetId: region == primaryLocation ? primaryMiddleTierSubnetId : secondaryMiddleTierSubnetId
+    virtualMachineName: 'products-${region}'
+    location: region
+    availabilityZones: [1,2,3]
+    managedIdentityResourceId: userassignedmiforkvaccess.id
+    tags: resourceTags
+  } 
+}]
 
 
 
@@ -187,9 +265,10 @@ module keyvault 'br/public:avm/res/key-vault/vault:0.4.0' = [for region in regio
 // Create IAAS SQL servers
 
 module productsSqlServer 'modules/createSqlIaas.bicep' = [for region in regions: if (deployBackendIaas) {
-  name : 'productsvm-${region}-deployment'
+  name : 'products-sqlvm-${region}-deployment'
   dependsOn: vnet
   params: {
+    adminUserName: adminUserName
     adminPassword: adminPassword
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
     virtualMachineName: '${productsDbServerName}-${region}'
@@ -199,9 +278,10 @@ module productsSqlServer 'modules/createSqlIaas.bicep' = [for region in regions:
 }]
 
 module profilesSqlServer 'modules/createSqlIaas.bicep' = [for region in regions: if (deployBackendIaas) {
-  name : 'profilesvm-${region}-deployment'
+  name : 'profiles-sqlvm-${region}-deployment'
   dependsOn: vnet
   params: {
+    adminUserName: adminUserName
     adminPassword: adminPassword
     subnetId: region == primaryLocation ? primaryBackendSubnetId : secondaryBackendSubnetId
     virtualMachineName: '${profilesDbServerName}-${region}'
@@ -216,7 +296,7 @@ module productsSql 'modules/createSqlPaas.bicep' = [for region in regions: if (!
   name : 'products-sql-${region}-deployment'
   params: {
     location: region
-    adminUserName: 'localadmin'
+    adminUserName: adminUserName
     adminPassword: adminPassword
     sqlServerName: '${productsDbServerName}-${region}'
     dbSkuName: 'Basic'
@@ -231,7 +311,7 @@ module profilesSql 'modules/createSqlPaas.bicep' = [for region in regions: if (!
   name : 'profiles-sql-${region}-deployment'
   params: {
     location: region
-    adminUserName: 'localadmin'
+    adminUserName: adminUserName
     adminPassword: adminPassword
     sqlServerName: '${profilesDbServerName}-${region}'
     dbSkuName: 'Basic'
