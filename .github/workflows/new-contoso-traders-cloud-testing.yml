@@ -145,27 +145,23 @@ jobs:
       # Next step is to deploy the Azure resources to the resource group `contoso-traders-rg` created above. The deployed resources
       # include storage accounts, function apps, app services cosmos db, and service bus etc.
       # The below step can also be manually executed as follows:
-      # az deployment group create -g contoso-traders-rg --template-file .\createResources.bicep --parameters .\createResources.parameters.json
-      # Note: The `createResources.parameters.json` file contains the parameters for the deployment; specifically the environment name.
-      # You can modify the parameters to customize the deployment.
-      # Note: The bicep template outputs are not shown in the logs. You can extract the outputs as shown here:
-      # https://github.com/Azure/arm-deploy#another-example-on-how-to-use-this-action-to-get-the-output-of-arm-template
+      # az deployment group create -g contoso-traders-rg --parameters .\newCreateResources.bicepparams
+      # We use an az cli inline script here as inline parameters is not currently supported with the Azure/arm-deploy action.
       - name: create resources
         id: createResources
-        uses: Azure/arm-deploy@v1
+        uses: Azure/cli@v2
         with:
-          scope: resourcegroup
-          region: ${{ vars.DEPLOYMENTREGION }}
-          resourceGroupName: ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}
-          template: ./iac/newcreateResources.bicep
-          parameters: ./iac/newcreateResources.bicepparam 
-                      suffix=${{ vars.SUFFIX }} 
-                      deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} 
-                      primaryLocation=${{ vars.DEPLOYMENTREGION }} 
-                      secondaryLocation=${{ vars.SECONDARYREGION }}
-                      adminPassword=${{ secrets.ADMINPASSWORD }} 
-                      deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} 
-                      deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }}
+          inlineScript: |
+            az deployment group create -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} `
+            --parameters ./iac/createResources.bicepparam `
+            --parameters suffix=${{ vars.SUFFIX }} `
+            deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} `
+            primaryLocation=${{ vars.DEPLOYMENTREGION }} `
+            secondaryLocation=${{ vars.SECONDARYREGION }} `
+            adminPassword=${{ secrets.ADMINPASSWORD }} `
+            deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} `
+            deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }}
+
                       
       # Seed the DBs and storage accounts
       - name: seed AzureSQL products db
