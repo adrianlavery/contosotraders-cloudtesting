@@ -154,7 +154,7 @@ jobs:
           inlineScript: |
             az deployment group create -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} \
             --name create-resources \
-            --parameters ./iac/createResources.bicepparam \
+            --parameters ./iac/newCreateResources.bicepparam \
             --parameters suffix=${{ vars.SUFFIX }} \
             deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} \
             primaryLocation=${{ vars.DEPLOYMENTREGION }} \
