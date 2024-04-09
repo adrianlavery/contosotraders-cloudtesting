@@ -223,21 +223,4 @@ jobs:
 
       # Deploy the products API to the IAAS VM
 
-      - name: deploy products API to VM Scaleset
-        uses: azure/CLI@v2
-        if: ${{ vars.DEPLOYMIDDLETIERONIAAS == 'true' }}
-        with:
-          inlineScript: |
-            az vmss extension set \
-              --resource-group ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} \
-              --vmss-name ${{ env.PROD_VM_NAME }}${{ vars.DEPLOYMENTREGION }} \
-              --name CustomScriptExtension \
-              --publisher Microsoft.Compute \
-              --protected-settings '{"script": "docker login --username ${{ env.ACR_NAME }}${{ vars.SUFFIX }} --password ${{ steps.extract-acr-password.outputs.acrPassword }} ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io && \
-                                               docker pull ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.PRODUCTS_ACR_REPOSITORY_NAME }}:${{ github.sha }} && \
-                                               docker run -d --restart=always -p 80:80 -e KeyVaultEndpoint='https://contosotraderskv${{ vars.SUFFIX }}.vault.azure.net/' \
-                                               -e ManagedIdentityClientId='${{ steps.get-managedIdentityClientId.outputs.managedIdentityClientId }}'  \
-                                               ${{ env.ACR_NAME }}${{ vars.SUFFIX }}.azurecr.io/${{ env.PRODUCTS_ACR_REPOSITORY_NAME }}:${{ github.sha }}"'}
-              
-        
-      
+    

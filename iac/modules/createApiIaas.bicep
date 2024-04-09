@@ -39,6 +39,18 @@ param subnetId string
 @description('The managed identity resource id')
 param managedIdentityResourceId string
 
+@description('The ACR object')
+param acr object
+
+@description('The acr password')
+param acrPassword string
+
+@description('The Repository name')
+param acrRepository string
+
+@description('The KeyVault URI')
+param keyVaultUri string
+
 @description('Tags')
 param tags object = {environment: 'test'}
 
@@ -83,10 +95,13 @@ module virtualmachinescaleset 'br/public:avm/res/compute/virtual-machine-scale-s
     ]
     extensionCustomScriptConfig: {
       enabled: true
-      fileData: []
-      protectedSettings: {
-        commandToExecute: 'curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh '
-      }
+      commandToExecute: 'deployAPI.sh ${acr.ouputs.name} ${acrPassword} ${acr.ouputs.loginServer} ${acrRepository} ${keyVaultUri} ${managedIdentityResourceId}'
+      fileData: [
+        {
+          uri: 'https://github.com/adrianlavery/contosotraders-cloudtesting/blob/main/iac/scripts/deployAPI.sh'
+        }
+      ]
+      
     }
     skuCapacity: instanceCount
     vmNamePrefix: virtualMachineName

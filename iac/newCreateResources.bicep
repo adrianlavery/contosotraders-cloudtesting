@@ -227,7 +227,24 @@ module acr 'br/public:avm/res/container-registry/registry:0.1.1' = {
   }
 }
 
-
+resource extractAcrPassword 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
+  name: 'extractAcrPassword'
+  location: primaryLocation
+  kind: 'AzureCLI'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedMIForKVAccessName}': {}
+    }
+  }
+  properties: {
+    azCliVersion: '2.28.0'
+    scriptContent: 'az acr credential show -n ${prefix}acr${suffix} --query "passwords[0].value" -o tsv'
+    retentionInterval: 'PT4H'
+    timeout: 'PT1H'
+  }
+  tags: resourceTags
+} 
 
 
 // Frontend Resources
@@ -253,6 +270,10 @@ module productsApiServer 'modules/createApiIaas.bicep' = [for region in regions:
     location: region
     availabilityZones: [1,2,3]
     managedIdentityResourceId: userassignedmiforkvaccess.id
+    acr: acr
+    acrPassword: extractAcrPassword.properties.outputs.result
+    acrRepository: 'contosotradersapiproducts'
+    keyVaultUri: keyvault[region == primaryLocation ? 0 : 1].outputs.uri
     tags: resourceTags
   } 
 }]
