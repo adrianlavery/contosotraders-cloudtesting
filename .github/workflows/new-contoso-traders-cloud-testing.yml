@@ -152,14 +152,15 @@ jobs:
         uses: Azure/cli@v2
         with:
           inlineScript: |
-            az deployment group create -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} `
-            --parameters ./iac/createResources.bicepparam `
-            --parameters suffix=${{ vars.SUFFIX }} `
-            deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} `
-            primaryLocation=${{ vars.DEPLOYMENTREGION }} `
-            secondaryLocation=${{ vars.SECONDARYREGION }} `
-            adminPassword=${{ secrets.ADMINPASSWORD }} `
-            deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} `
+            az deployment group create -g ${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }} \
+            --name create-resources \
+            --parameters ./iac/createResources.bicepparam \
+            --parameters suffix=${{ vars.SUFFIX }} \
+            deployMultiRegion=${{ vars.DEPLOYMULTIREGION }} \
+            primaryLocation=${{ vars.DEPLOYMENTREGION }} \
+            secondaryLocation=${{ vars.SECONDARYREGION }} \
+            adminPassword=${{ secrets.ADMINPASSWORD }} \
+            deployPrivateEndpoints=${{ vars.DEPLOYPRIVATEENDPOINTS }} \
             deployBackendIaas=${{ vars.DEPLOYBACKENDONIAAS }}
 
                     
